@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>瑟瑟连连看</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body {
             margin: 0;
@@ -12,18 +11,14 @@
             align-items: center;
             background: #f0f0f0;
             font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-            touch-action: manipulation;
         }
-
         #gameContainer {
             position: relative;
             margin: 20px;
             border: 3px solid #333;
             border-radius: 10px;
             overflow: hidden;
-            transform-origin: top center;
         }
-
         .cell {
             position: absolute;
             border: 1px solid #e5e5e5;
@@ -31,7 +26,6 @@
             background-size: cover;
             transition: opacity 0.3s;
         }
-
         #header {
             display: flex;
             justify-content: space-around;
@@ -39,9 +33,7 @@
             padding: 10px;
             background: #fff;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            font-size: 16px;
         }
-
         #modeSelect {
             position: absolute;
             top: 50%;
@@ -49,15 +41,14 @@
             transform: translate(-50%, -50%);
             text-align: center;
         }
-
         .weui-btn {
             position: relative;
             display: block;
             width: 280px;
             margin: 20px auto;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 17px;
+            border-radius: 8px;
             border: none;
             color: #fff;
             background: #07c160;
@@ -66,20 +57,15 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.3s;
         }
-
         .weui-btn:active {
             background: #06ad56;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         #controlPanel {
             margin-top: 20px;
             display: flex;
             gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
         }
-
         .dialog-mask {
             position: fixed;
             top: 0;
@@ -88,9 +74,7 @@
             bottom: 0;
             background: rgba(0,0,0,0.5);
             display: none;
-            z-index: 1000;
         }
-
         .dialog-content {
             position: fixed;
             top: 50%;
@@ -101,9 +85,7 @@
             border-radius: 12px;
             text-align: center;
             display: none;
-            z-index: 1001;
         }
-
         .path-line {
             position: absolute;
             background: #ff4757;
@@ -111,32 +93,19 @@
             z-index: 100;
             transition: all 0.3s;
         }
-
         @keyframes pulse {
             0% { transform: scale(0.8); opacity: 0.5; }
             50% { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1); opacity: 0.5; }
-        }
-
-        @media screen and (max-width: 600px) {
-            #gameContainer {
-                transform: scale(1.8);
-                margin: 60px 0;
-            }
-            .weui-btn {
-                width: 220px;
-                padding: 20px;
-                font-size: 20px;
-            }
         }
     </style>
 </head>
 <body>
     <div id="modeSelect">
         <h1 style="color:#07c160;font-size:36px;margin-bottom:40px;">瑟瑟连连看</h1>
-        <button class="weui-btn" onclick="startGame('easy')">简单模式</button>
-        <button class="weui-btn" onclick="startGame('normal')">标准模式</button>
-        <button class="weui-btn" onclick="startGame('hard')">高难模式</button>
+        <button class="weui-btn" onclick="startGame(4)">简单模式</button>
+        <button class="weui-btn" onclick="startGame(6)">标准模式</button>
+        <button class="weui-btn" onclick="startGame(8)">高难模式</button>
     </div>
 
     <div id="header" style="display: none;">
@@ -148,9 +117,9 @@
     <div id="gameContainer"></div>
 
     <div id="controlPanel" style="display: none;">
-        <button class="weui-btn" style="width:160px;" onclick="backToHome()">返回首页</button>
-        <button class="weui-btn" style="width:160px;" onclick="restart()">重新开始</button>
-        <button class="weui-btn" style="width:160px;" onclick="location.href='https://www.thisnet.cn/wxurl/mini.php'">联系作者</button>
+        <button class="weui-btn" style="width:120px;padding:8px;" onclick="backToHome()">返回首页</button>
+        <button class="weui-btn" style="width:120px;padding:8px;" onclick="restart()">重新开始</button>
+        <button class="weui-btn" style="width:120px;padding:8px;" onclick="location.href='https://www.thisnet.cn/wxurl/mini.php'">联系作者</button>
     </div>
 
     <div id="dialogMask" class="dialog-mask"></div>
@@ -161,17 +130,8 @@
     </div>
 
 <script>
-// 游戏配置
-const MODE_CONFIG = {
-    easy:    { rows: 4,  cols: 6,  pics: 6  }, // 4x6=24格
-    normal:  { rows: 6,  cols: 8,  pics: 12 }, // 6x8=48格
-    hard:    { rows: 8,  cols: 12, pics: 24 }  // 8x12=96格
-};
-const CELL_SIZE = 80; // 基础单元格尺寸
-const ALL_IMAGES = Array.from({length:48}, (_,i) => 10001 + i);
-
 let gameState = {
-    mode: null,
+    mode: 4,
     selected: null,
     cells: [],
     images: [],
@@ -180,14 +140,11 @@ let gameState = {
     bestTime: localStorage.getItem('bestTime') || Infinity
 };
 
-// 初始化显示最佳成绩
-document.getElementById('best').textContent = 
-    gameState.bestTime === Infinity ? '-' : gameState.bestTime;
-
 function startGame(mode) {
     document.getElementById('modeSelect').style.display = 'none';
     document.getElementById('header').style.display = 'flex';
     document.getElementById('controlPanel').style.display = 'flex';
+    
     gameState.mode = mode;
     initGame();
     startTimer();
@@ -196,25 +153,25 @@ function startGame(mode) {
 function initGame() {
     const container = document.getElementById('gameContainer');
     container.innerHTML = '';
-    const config = MODE_CONFIG[gameState.mode];
     
-    // 设置容器尺寸
-    container.style.width = CELL_SIZE * config.cols + 'px';
-    container.style.height = CELL_SIZE * config.rows + 'px';
+    const size = gameState.mode;
+    const cellSize = Math.min(80, 600/size);
+    container.style.width = cellSize * size + 'px';
+    container.style.height = cellSize * size + 'px';
 
-    // 生成图片数组
-    const selected = shuffleArray(ALL_IMAGES).slice(0, config.pics);
-    gameState.images = shuffleArray(selected.flatMap(id => Array(4).fill(id)));
+    const picCount = Math.pow(size,2) / 4;
+    gameState.images = Array.from({length: picCount}, () => 
+        Math.floor(Math.random()*48)+10001
+    ).flatMap(id => Array(4).fill(id)).sort(() => Math.random()-0.5);
 
-    // 创建格子
     gameState.cells = [];
-    for(let i = 0; i < config.rows * config.cols; i++){
+    for(let i=0; i<size*size; i++){
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.style.width = CELL_SIZE + 'px';
-        cell.style.height = CELL_SIZE + 'px';
-        cell.style.left = (i % config.cols) * CELL_SIZE + 'px';
-        cell.style.top = Math.floor(i / config.cols) * CELL_SIZE + 'px';
+        cell.style.width = cellSize + 'px';
+        cell.style.height = cellSize + 'px';
+        cell.style.left = (i%size)*cellSize + 'px';
+        cell.style.top = Math.floor(i/size)*cellSize + 'px';
         cell.dataset.index = i;
         cell.dataset.value = gameState.images[i];
         cell.style.backgroundImage = `url('${gameState.images[i]}.png')`;
@@ -252,7 +209,7 @@ function handleClick(e) {
 }
 
 function checkConnection(a, b) {
-    const config = MODE_CONFIG[gameState.mode];
+    const size = gameState.mode;
     const grid = createGridMap();
     const start = getCellPosition(a);
     const end = getCellPosition(b);
@@ -272,9 +229,12 @@ function checkConnection(a, b) {
             if (current.dir && getOppositeDir(current.dir) === dir) continue;
             
             const nextPos = move(current.pos, dir);
-            if (!isValidPos(nextPos, config)) continue;
+            if (!isValidPos(nextPos, size)) continue;
             
-            if (samePos(nextPos, end)) return [...current.path, end];
+            if (samePos(nextPos, end)) {
+                return [...current.path, end];
+            }
+            
             if (grid[nextPos.x][nextPos.y] !== 0) continue;
             
             const turns = (dir !== current.dir && current.dir) ? current.turns + 1 : current.turns;
@@ -292,9 +252,8 @@ function checkConnection(a, b) {
 }
 
 function createGridMap() {
-    const config = MODE_CONFIG[gameState.mode];
-    const grid = Array.from({length: config.rows}, () => 
-        Array(config.cols).fill(0));
+    const size = gameState.mode;
+    const grid = Array.from({length: size}, () => Array(size).fill(0));
     gameState.cells.forEach(cell => {
         if (cell.parentNode) {
             const pos = getCellPosition(cell);
@@ -305,11 +264,11 @@ function createGridMap() {
 }
 
 function getCellPosition(cell) {
-    const config = MODE_CONFIG[gameState.mode];
+    const size = gameState.mode;
     const index = parseInt(cell.dataset.index);
     return {
-        x: Math.floor(index / config.cols),
-        y: index % config.cols
+        x: Math.floor(index / size),
+        y: index % size
     };
 }
 
@@ -331,61 +290,94 @@ function move(pos, dir) {
     };
 }
 
-function isValidPos(pos, config) {
-    return pos.x >= 0 && pos.x < config.rows && 
-           pos.y >= 0 && pos.y < config.cols;
+function isValidPos(pos, size) {
+    return pos.x >= 0 && pos.x < size && pos.y >= 0 && pos.y < size;
 }
 
-function samePos(a, b) { return a.x === b.x && a.y === b.y; }
+function samePos(a, b) {
+    return a.x === b.x && a.y === b.y;
+}
 
 function getOppositeDir(dir) {
-    return { 'up':'down', 'down':'up', 'left':'right', 'right':'left' }[dir];
+    return {
+        'up': 'down',
+        'down': 'up',
+        'left': 'right',
+        'right': 'left'
+    }[dir];
 }
 
 function eliminateCells(a, b, path) {
     drawConnectionLine(path);
+
     setTimeout(() => {
         a.remove();
         b.remove();
         document.querySelectorAll('.path-line').forEach(line => line.remove());
-        checkGameOver();
+        
+        if([...document.getElementsByClassName('cell')].every(c => !c.parentNode)) {
+            endGame();
+        }
     }, 500);
 }
 
 function drawConnectionLine(path) {
     const container = document.getElementById('gameContainer');
-    const config = MODE_CONFIG[gameState.mode];
+    const cellSize = container.clientWidth / gameState.mode;
     
     for (let i = 1; i < path.length; i++) {
-        const prev = path[i-1];
-        const curr = path[i];
+        const start = path[i-1];
+        const end = path[i];
+        
         const line = document.createElement('div');
         line.className = 'path-line';
+        
+        const startX = start.y * cellSize + cellSize/2;
+        const startY = start.x * cellSize + cellSize/2;
+        const endX = end.y * cellSize + cellSize/2;
+        const endY = end.x * cellSize + cellSize/2;
 
-        const x1 = prev.y * CELL_SIZE + CELL_SIZE/2;
-        const y1 = prev.x * CELL_SIZE + CELL_SIZE/2;
-        const x2 = curr.y * CELL_SIZE + CELL_SIZE/2;
-        const y2 = curr.x * CELL_SIZE + CELL_SIZE/2;
-
-        if (prev.x === curr.x) { // 水平线
-            line.style.width = `${Math.abs(x2 - x1)}px`;
+        // 水平线段
+        if (start.x === end.x) {
+            line.style.width = `${Math.abs(endX - startX)}px`;
             line.style.height = '4px';
-            line.style.left = `${Math.min(x1, x2)}px`;
-            line.style.top = `${y1 - 2}px`;
-        } else { // 垂直线
+            line.style.left = `${Math.min(startX, endX)}px`;
+            line.style.top = `${startY - 2}px`;
+        } 
+        // 垂直线段
+        else {
             line.style.width = '4px';
-            line.style.height = `${Math.abs(y2 - y1)}px`;
-            line.style.left = `${x1 - 2}px`;
-            line.style.top = `${Math.min(y1, y2)}px`;
+            line.style.height = `${Math.abs(endY - startY)}px`;
+            line.style.left = `${startX - 2}px`;
+            line.style.top = `${Math.min(startY, endY)}px`;
         }
+
+        line.style.opacity = '0';
+        setTimeout(() => line.style.opacity = '1', 50);
         container.appendChild(line);
     }
-}
 
-function checkGameOver() {
-    if ([...document.getElementsByClassName('cell')].every(c => !c.parentNode)) {
-        endGame();
-    }
+    // 添加起点终点动画
+    const startMarker = document.createElement('div');
+    startMarker.className = 'path-line';
+    startMarker.style.width = '20px';
+    startMarker.style.height = '20px';
+    startMarker.style.left = `${path[0].y * cellSize + cellSize/2 - 10}px`;
+    startMarker.style.top = `${path[0].x * cellSize + cellSize/2 - 10}px`;
+    startMarker.style.borderRadius = '50%';
+    startMarker.style.animation = 'pulse 0.5s';
+
+    const endMarker = startMarker.cloneNode();
+    endMarker.style.left = `${path[path.length-1].y * cellSize + cellSize/2 - 10}px`;
+    endMarker.style.top = `${path[path.length-1].x * cellSize + cellSize/2 - 10}px`;
+
+    container.appendChild(startMarker);
+    container.appendChild(endMarker);
+
+    setTimeout(() => {
+        startMarker.remove();
+        endMarker.remove();
+    }, 500);
 }
 
 function startTimer() {
@@ -410,24 +402,19 @@ function endGame() {
     document.getElementById('dialogContent').style.display = 'block';
 }
 
-function backToHome() { location.reload(); }
+function backToHome() {
+    location.reload();
+}
 
 function restart() {
     document.getElementById('dialogMask').style.display = 'none';
     document.getElementById('dialogContent').style.display = 'none';
+    
     clearInterval(gameState.timerId);
     initGame();
     startTimer();
     document.getElementById('round').textContent = 
         parseInt(document.getElementById('round').textContent) + 1;
-}
-
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
 }
 </script>
 </body>
