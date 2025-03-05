@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>瑟瑟连连看</title>
     <style>
         body {
@@ -11,13 +12,15 @@
             align-items: center;
             background: #f0f0f0;
             font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
         }
         #gameContainer {
             position: relative;
-            margin: 20px;
+            margin: 10px;
             border: 3px solid #333;
             border-radius: 10px;
             overflow: hidden;
+            background: white;
         }
         .cell {
             position: absolute;
@@ -25,34 +28,37 @@
             cursor: pointer;
             background-size: cover;
             transition: opacity 0.3s;
+            box-sizing: border-box;
         }
         #header {
             display: flex;
             justify-content: space-around;
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background: #fff;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 14px;
         }
         #modeSelect {
+            width: 90%;
+            max-width: 400px;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            padding: 20px;
         }
         .weui-btn {
-            position: relative;
-            display: block;
-            width: 280px;
-            margin: 20px auto;
-            padding: 12px 24px;
-            font-size: 17px;
-            border-radius: 8px;
+            width: 100%;
+            max-width: 280px;
+            margin: 12px auto;
+            padding: 15px 24px;
+            font-size: 16px;
+            border-radius: 25px;
             border: none;
             color: #fff;
             background: #07c160;
-            line-height: 1.4;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.3s;
@@ -62,9 +68,11 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         #controlPanel {
-            margin-top: 20px;
+            margin: 15px 0;
             display: flex;
-            gap: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .dialog-mask {
             position: fixed;
@@ -81,10 +89,12 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 12px;
             text-align: center;
             display: none;
+            width: 80%;
+            max-width: 300px;
         }
         .path-line {
             position: absolute;
@@ -93,19 +103,28 @@
             z-index: 100;
             transition: all 0.3s;
         }
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.5; }
+        h1 {
+            font-size: 28px !important;
+            margin: 20px 0;
+            color: #07c160 !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        @media (min-width: 768px) {
+            .weui-btn {
+                width: 280px;
+            }
+            h1 {
+                font-size: 36px !important;
+            }
         }
     </style>
 </head>
 <body>
     <div id="modeSelect">
-        <h1 style="color:#07c160;font-size:36px;margin-bottom:40px;">瑟瑟连连看</h1>
-        <button class="weui-btn" onclick="startGame(4)">简单模式</button>
-        <button class="weui-btn" onclick="startGame(6)">标准模式</button>
-        <button class="weui-btn" onclick="startGame(8)">高难模式</button>
+        <h1>瑟瑟连连看</h1>
+        <button class="weui-btn" onclick="startGame({rows:6, cols:4, pics:6})">简单模式 (6×4)</button>
+        <button class="weui-btn" onclick="startGame({rows:8, cols:6, pics:12})">标准模式 (8×6)</button>
+        <button class="weui-btn" onclick="startGame({rows:10, cols:8, pics:20})">高难模式 (10×8)</button>
     </div>
 
     <div id="header" style="display: none;">
@@ -117,21 +136,28 @@
     <div id="gameContainer"></div>
 
     <div id="controlPanel" style="display: none;">
-        <button class="weui-btn" style="width:120px;padding:8px;" onclick="backToHome()">返回首页</button>
-        <button class="weui-btn" style="width:120px;padding:8px;" onclick="restart()">重新开始</button>
-        <button class="weui-btn" style="width:120px;padding:8px;" onclick="location.href='https://www.thisnet.cn/wxurl/mini.php'">联系作者</button>
+        <button class="weui-btn" style="width:100px;padding:8px;" onclick="backToHome()">返回首页</button>
+        <button class="weui-btn" style="width:100px;padding:8px;" onclick="restart()">重新开始</button>
+        <button class="weui-btn" style="width:100px;padding:8px;" onclick="location.href='https://www.thisnet.cn/wxurl/mini.php'">联系作者</button>
     </div>
 
     <div id="dialogMask" class="dialog-mask"></div>
     <div id="dialogContent" class="dialog-content">
         <h2 style="color:#07c160;margin-bottom:20px;">你真棒！</h2>
-        <button class="weui-btn" style="background:#07c160;" onclick="location.href='https://www.thisnet.cn/wxurl/mini.php'">现在瑟瑟</button>
-        <button class="weui-btn" style="background:#576b95;" onclick="restart()">再来一局</button>
+        <button class="weui-btn" style="background:#07c160;" onclick="restart()">再来一局</button>
     </div>
 
 <script>
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 let gameState = {
-    mode: 4,
+    mode: null,
     selected: null,
     cells: [],
     images: [],
@@ -140,12 +166,12 @@ let gameState = {
     bestTime: localStorage.getItem('bestTime') || Infinity
 };
 
-function startGame(mode) {
+function startGame(config) {
     document.getElementById('modeSelect').style.display = 'none';
     document.getElementById('header').style.display = 'flex';
     document.getElementById('controlPanel').style.display = 'flex';
     
-    gameState.mode = mode;
+    gameState.mode = config;
     initGame();
     startTimer();
 }
@@ -153,25 +179,30 @@ function startGame(mode) {
 function initGame() {
     const container = document.getElementById('gameContainer');
     container.innerHTML = '';
-    
-    const size = gameState.mode;
-    const cellSize = Math.min(80, 600/size);
-    container.style.width = cellSize * size + 'px';
-    container.style.height = cellSize * size + 'px';
-
-    const picCount = Math.pow(size,2) / 4;
-    gameState.images = Array.from({length: picCount}, () => 
-        Math.floor(Math.random()*48)+10001
-    ).flatMap(id => Array(4).fill(id)).sort(() => Math.random()-0.5);
-
     gameState.cells = [];
-    for(let i=0; i<size*size; i++){
+    
+    const {rows, cols, pics} = gameState.mode;
+    const containerWidth = Math.min(500, window.innerWidth - 40);
+    const cellSize = containerWidth / cols;
+
+    container.style.width = `${containerWidth}px`;
+    container.style.height = `${cellSize * rows}px`;
+
+    // 生成唯一图片数组
+    const allImages = Array.from({length: 48}, (_, i) => 10001 + i);
+    shuffleArray(allImages);
+    const selectedImages = allImages.slice(0, pics);
+    const pairedImages = selectedImages.flatMap(id => Array(4).fill(id));
+    gameState.images = shuffleArray(pairedImages);
+
+    // 创建单元格
+    for(let i = 0; i < rows * cols; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.style.width = cellSize + 'px';
-        cell.style.height = cellSize + 'px';
-        cell.style.left = (i%size)*cellSize + 'px';
-        cell.style.top = Math.floor(i/size)*cellSize + 'px';
+        cell.style.width = `${cellSize}px`;
+        cell.style.height = `${cellSize}px`;
+        cell.style.left = `${(i % cols) * cellSize}px`;
+        cell.style.top = `${Math.floor(i / cols) * cellSize}px`;
         cell.dataset.index = i;
         cell.dataset.value = gameState.images[i];
         cell.style.backgroundImage = `url('${gameState.images[i]}.png')`;
@@ -209,7 +240,7 @@ function handleClick(e) {
 }
 
 function checkConnection(a, b) {
-    const size = gameState.mode;
+    const {rows, cols} = gameState.mode;
     const grid = createGridMap();
     const start = getCellPosition(a);
     const end = getCellPosition(b);
@@ -229,7 +260,7 @@ function checkConnection(a, b) {
             if (current.dir && getOppositeDir(current.dir) === dir) continue;
             
             const nextPos = move(current.pos, dir);
-            if (!isValidPos(nextPos, size)) continue;
+            if (!isValidPos(nextPos, rows, cols)) continue;
             
             if (samePos(nextPos, end)) {
                 return [...current.path, end];
@@ -252,8 +283,8 @@ function checkConnection(a, b) {
 }
 
 function createGridMap() {
-    const size = gameState.mode;
-    const grid = Array.from({length: size}, () => Array(size).fill(0));
+    const {rows, cols} = gameState.mode;
+    const grid = Array.from({length: rows}, () => Array(cols).fill(0));
     gameState.cells.forEach(cell => {
         if (cell.parentNode) {
             const pos = getCellPosition(cell);
@@ -264,11 +295,11 @@ function createGridMap() {
 }
 
 function getCellPosition(cell) {
-    const size = gameState.mode;
+    const cols = gameState.mode.cols;
     const index = parseInt(cell.dataset.index);
     return {
-        x: Math.floor(index / size),
-        y: index % size
+        x: Math.floor(index / cols),
+        y: index % cols
     };
 }
 
@@ -290,8 +321,8 @@ function move(pos, dir) {
     };
 }
 
-function isValidPos(pos, size) {
-    return pos.x >= 0 && pos.x < size && pos.y >= 0 && pos.y < size;
+function isValidPos(pos, rows, cols) {
+    return pos.x >= 0 && pos.x < rows && pos.y >= 0 && pos.y < cols;
 }
 
 function samePos(a, b) {
@@ -323,7 +354,9 @@ function eliminateCells(a, b, path) {
 
 function drawConnectionLine(path) {
     const container = document.getElementById('gameContainer');
-    const cellSize = container.clientWidth / gameState.mode;
+    const {cols, rows} = gameState.mode;
+    const cellWidth = container.clientWidth / cols;
+    const cellHeight = container.clientHeight / rows;
     
     for (let i = 1; i < path.length; i++) {
         const start = path[i-1];
@@ -332,52 +365,25 @@ function drawConnectionLine(path) {
         const line = document.createElement('div');
         line.className = 'path-line';
         
-        const startX = start.y * cellSize + cellSize/2;
-        const startY = start.x * cellSize + cellSize/2;
-        const endX = end.y * cellSize + cellSize/2;
-        const endY = end.x * cellSize + cellSize/2;
+        const startX = start.y * cellWidth + cellWidth/2;
+        const startY = start.x * cellHeight + cellHeight/2;
+        const endX = end.y * cellWidth + cellWidth/2;
+        const endY = end.x * cellHeight + cellHeight/2;
 
-        // 水平线段
         if (start.x === end.x) {
             line.style.width = `${Math.abs(endX - startX)}px`;
             line.style.height = '4px';
             line.style.left = `${Math.min(startX, endX)}px`;
             line.style.top = `${startY - 2}px`;
-        } 
-        // 垂直线段
-        else {
+        } else {
             line.style.width = '4px';
             line.style.height = `${Math.abs(endY - startY)}px`;
             line.style.left = `${startX - 2}px`;
             line.style.top = `${Math.min(startY, endY)}px`;
         }
 
-        line.style.opacity = '0';
-        setTimeout(() => line.style.opacity = '1', 50);
         container.appendChild(line);
     }
-
-    // 添加起点终点动画
-    const startMarker = document.createElement('div');
-    startMarker.className = 'path-line';
-    startMarker.style.width = '20px';
-    startMarker.style.height = '20px';
-    startMarker.style.left = `${path[0].y * cellSize + cellSize/2 - 10}px`;
-    startMarker.style.top = `${path[0].x * cellSize + cellSize/2 - 10}px`;
-    startMarker.style.borderRadius = '50%';
-    startMarker.style.animation = 'pulse 0.5s';
-
-    const endMarker = startMarker.cloneNode();
-    endMarker.style.left = `${path[path.length-1].y * cellSize + cellSize/2 - 10}px`;
-    endMarker.style.top = `${path[path.length-1].x * cellSize + cellSize/2 - 10}px`;
-
-    container.appendChild(startMarker);
-    container.appendChild(endMarker);
-
-    setTimeout(() => {
-        startMarker.remove();
-        endMarker.remove();
-    }, 500);
 }
 
 function startTimer() {
@@ -409,7 +415,6 @@ function backToHome() {
 function restart() {
     document.getElementById('dialogMask').style.display = 'none';
     document.getElementById('dialogContent').style.display = 'none';
-    
     clearInterval(gameState.timerId);
     initGame();
     startTimer();
